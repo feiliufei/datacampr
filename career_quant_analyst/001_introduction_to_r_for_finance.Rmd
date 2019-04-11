@@ -1,6 +1,6 @@
 ---
 title: "Introduction to R for Finance"
-output: html_notebook
+output: rmarkdown::github_document
 ---
 
 ### 3. Data Frames
