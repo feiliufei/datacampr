@@ -1,0 +1,193 @@
+---
+title: "Introduction to R for Finance"
+output: html_notebook
+---
+
+### 3. Data Frames
+
+#### Create and subset data frames
+```{r financial returns and  present value of projected cash flows}
+company <- c(rep("A", 3), rep("B", 4) )
+cash_flow <- c(1000, 4000, 550, 1500, 1100, 750, 6000)
+year <- c(1, 3, 4, 1, 2, 4, 5)
+
+cash <- data.frame(company, cash_flow, year)  # create data frame
+cash$present_value <- cash$cash_flow * 1.05^ -cash$year  # present value of each cash flow at a 5% interest rate
+cash
+
+# Total present value of cash
+total_pv <- sum(cash$present_value)
+paste("The total present value of cash is", total_pv)
+cash_B <- subset(cash, cash$company == "B")  # subset company B
+total_pv_B <- sum(cash_B$present_value)  # total present value of company B
+paste("The total present value of cash of company B is", total_pv_B)
+```
+
+
+
+### 4. Factors
+
+#### Create a factor
+
+Bond credit ratings are common in the fixed income side of the finance world as a simple measure of how "risky" a certain bond might be. Here, riskiness can be defined as the probability of default, which means an inability to pay back your debts. 
+
+This is a perfect example of a factor! It is a categorical variable that takes on a limited number of levels.
+
+```{r}
+# credit_rating character vector
+credit_rating <- c("BB", "AAA", "AA", "CCC", "AA", "AAA", "B", "BB")
+credit_factor <- factor(credit_rating)
+str(credit_factor)
+```
+
+
+
+#### Factor levels
+Accessing the unique levels of your factor is simple enough by using the **levels()** function. You can also use this to **rename** your factor levels!
+
+```{r}
+levels(credit_factor)  # identify unique levels
+levels(credit_factor) <- c("2A", "3A", "1B", "2B", "3C")  # Rename the levels of credit_factor
+summary(credit_factor)
+plot(credit_factor)  # visualize factor
+```
+
+#### Bucketing a numeric variable into a factor...
+using **cut()**
+
+```{r}
+AAA_rank <- sample(1:100, 50, replace = T)
+AAA_factor <- cut(x = AAA_rank, breaks = c(0, 25, 50, 75, 100))  # use breaks to specify the groups
+AAA_factor
+levels(AAA_factor) <- c("low", "medium", "high", "very_high")  # rename the levels
+AAA_factor
+```
+
+#### ordering and subsetting factors with ordered()
+
+Create an ordered factor. By existing factor use **ordered()** to order it.
+ 
+```{r}
+credit_rating <- c("BB", "AAA", "AA", "CCC", "AA", "AAA", "B", "BB")
+unique(credit_rating)  # Use unique() to find unique words
+credit_factor_ordered <- factor(credit_rating, ordered = T, levels = c("AAA", "AA", "BB", "B", "CCC")) 
+credit_factor_ordered 
+credit_factor_ordered[c(-3, -5), drop = T]  # drop "A" and at the same time the level of "A" with drop = T
+```
+
+#### stringsAsFactors = F
+
+R's default behavior when creating data frames is to convert all **characters** into factors.
+
+To turn off this behavior, use stringsAsFactors = F
+
+```{r}
+credit_rating <- c("AAA", "A", "BB")
+bond_owners <- c("Dan", "Tom", "Joe")
+bonds <- data.frame(credit_rating, bond_owners)
+str(bonds)
+bonds <- data.frame(credit_rating, bond_owners, stringsAsFactors = F)
+str(bonds)
+
+# only create ordered factor for rating
+bonds$credit_factor <- factor(bonds$credit_rating, ordered = T, levels = c("AAA", "A", "BB"))
+str(bonds)
+```
+
+
+### 5. Lists
+
+#### Create a list with list(
+
+)
+```{r}
+name <- "Apple and IBM"
+apple <- c(109.49, 109.90, 109.11, 109.95, 111.03)
+ibm <- c(159.82, 160.02, 159.84, 160.35, 164.79)
+cor_matrix <- cor(cbind(apple, ibm))
+portfolio <- list(name, apple, ibm, cor_matrix)
+names(portfolio) <- c("portfolio_name", "apple", "ibm", "correlation")  # add names to the list
+portfolio
+```
+
+#### Access elements in a list
+
+To access the elements in the list, use [ ]. This will always return another list.
+
+```{r}
+portfolio[2]
+```
+
+To pull out the data inside each element of your list, use [[ ]].
+```{r}
+portfolio[[2]]
+```
+
+If your list is named, you can use the $ operator. This is the same as using [[ ]] to return the inner data.
+
+```{r}
+portfolio$apple
+```
+
+### Adding to and removing from a list
+
+You can do so using **$** like you did when adding new columns to data frames.
+
+```{r}
+# add
+portfolio$weight <- c(apple = 0.2, ibm = 0.8)
+portfolio
+
+# edit value
+portfolio$weight <- c(apple = 0.3, ibm = 0.7)
+portfolio
+
+# remove by setting to NULL
+portfolio$microsoft <- c(150.0, 152, 154, 154.5)
+portfolio
+portfolio$microsoft <- NULL
+portfolio
+```
+
+
+### split() and unsplit()
+
+Often, you will have data for multiple groups together in one data frame. We split up data frame into separate data frames divided by a variable.
+
+```{r}
+cash
+# split cash into a list of 2 data frames separated by company
+split_cash <- split(cash, f = cash$company)  
+split_cash
+
+# To get your original data frame back, use unsplit()
+original_cash <- unsplit(split_cash, f = cash$company)
+original_cash
+```
+
+
+#### Split-Apply-Combine
+A common data science problem is to split your data frame by a grouping, apply some transformation to each group, and then recombine those pieces back into one data frame.
+
+```{r}
+split_cash <- split(cash, f = cash$company)
+
+# Print the cash_flow column of B in split_cash
+split_cash$A$cash_flow 
+split_cash$A$cash_flow <- 0
+
+# Use the grouping to unsplit split_cash
+cash_edit <- unsplit(split_cash, f = cash$company)
+cash_edit
+
+```
+
+#### Attributes
+
+Attributes are a bit of extra metadata about your data structure. Some of the most common attributes are: **row names and column names, dimensions, and class**. You can use the **attributes()** function to return a list of attributes about the object you pass in. To access a specific attribute, you can use the **attr()** function.
+
+```{r}
+attributes(cash)
+attr(cash, "names")  # access a specific attribute
+```
+
